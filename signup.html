@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up - MyShout</title>
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+    <script src="https://unpkg.com/feather-icons"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transition: all 0.3s ease;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body class="font-sans antialiased text-gray-900">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex">
+                    <div class="flex-shrink-0 flex items-center">
+                        <i data-feather="dollar-sign" class="h-8 w-8 text-indigo-600"></i>
+                        <span class="ml-2 text-xl font-bold text-indigo-600">MyShout</span>
+                    </div>
+                </div>
+                <div class="hidden sm:ml-6 sm:flex sm:items-center">
+                    <a href="signin.html" class="px-3 py-2 rounded-md text-sm font-medium text-gray-700 hover:text-indigo-600 hover:bg-gray-50">Sign In</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Sign Up Form -->
+    <div class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-md w-full space-y-8">
+            <div>
+                <div class="flex justify-center">
+                    <i data-feather="dollar-sign" class="h-12 w-12 text-indigo-600"></i>
+                </div>
+                <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
+                    Create your account
+                </h2>
+                <p class="mt-2 text-center text-sm text-gray-600">
+                    Or <a href="signin.html" class="font-medium text-indigo-600 hover:text-indigo-500">sign in to your existing account</a>
+                </p>
+            </div>
+            <form class="mt-8 space-y-6" id="signupForm">
+                <div class="rounded-md shadow-sm space-y-4">
+                    <div>
+                        <label for="name" class="sr-only">Full Name</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i data-feather="user" class="h-5 w-5 text-gray-400"></i>
+                            </div>
+                            <input id="name" name="name" type="text" required class="appearance-none block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-md placeholder-gray-500 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" placeholder="Full Name">
+                        </div>
+                    </div>
+                    <div>
+                        <label for="email" class="sr-only">Email address</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i data-feather="mail" class="h-5 w-5 text-gray-400"></i>
+                            </div>
+                            <input id="email" name="email" type="email" autocomplete="email" required class="appearance-none block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-md placeholder-gray-500 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" placeholder="Email address">
+                        </div>
+                    </div>
+                    <div>
+                        <label for="password" class="sr-only">Password</label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                <i data-feather="lock" class="h-5 w-5 text-gray-400"></i>
+                            </div>
+                            <input id="password" name="password" type="password" autocomplete="current-password" required class="appearance-none block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-md placeholder-gray-500 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" placeholder="Password">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <input id="remember-me" name="remember-me" type="checkbox" class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
+                        <label for="remember-me" class="ml-2 block text-sm text-gray-900">
+                            Remember me
+                        </label>
+                    </div>
+
+                    <div class="text-sm">
+                        <a href="#" class="font-medium text-indigo-600 hover:text-indigo-500">
+                            Forgot your password?
+                        </a>
+                    </div>
+                </div>
+
+                <div>
+                    <button type="submit" class="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        <span class="absolute left-0 inset-y-0 flex items-center pl-3">
+                            <i data-feather="user-plus" class="h-5 w-5 text-indigo-500 group-hover:text-indigo-400"></i>
+                        </span>
+                        Sign up
+                    </button>
+                </div>
+            </form>
+            
+            <div id="errorMessage" class="hidden bg-red-50 border-l-4 border-red-500 p-4">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <i data-feather="alert-circle" class="h-5 w-5 text-red-500"></i>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm text-red-700" id="errorText"></p>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="successMessage" class="hidden bg-green-50 border-l-4 border-green-500 p-4">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <i data-feather="check-circle" class="h-5 w-5 text-green-500"></i>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm text-green-700">Account created successfully! Redirecting...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyDl0Baz4bX-mZ-PGmxybwdRQ_sW75wFBXg",
+            authDomain: "myshout-e5a26.firebaseapp.com",
+            databaseURL: "https://myshout-e5a26-default-rtdb.firebaseio.com",
+            projectId: "myshout-e5a26",
+            storageBucket: "myshout-e5a26.firebasestorage.app",
+            messagingSenderId: "409395113050",
+            appId: "1:409395113050:web:4eae1c45e26ae692df3c63",
+            measurementId: "G-R13MBPGLVH"
+        };
+        
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+        
+        // Sign up form submission
+        document.getElementById('signupForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const name = document.getElementById('name').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            // Hide error message if visible
+            document.getElementById('errorMessage').classList.add('hidden');
+            
+            // Create user with email and password
+            auth.createUserWithEmailAndPassword(email, password)
+                .then((userCredential) => {
+                    // User created successfully
+                    const user = userCredential.user;
+                    
+                    // Add user data to Firestore
+                    return db.collection('users').doc(user.uid).set({
+                        name: name,
+                        email: email,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        friends: [],
+                        balance: 0
+                    });
+                })
+                .then(() => {
+                    // Show success message
+                    document.getElementById('successMessage').classList.remove('hidden');
+                    
+                    // Redirect to dashboard after 2 seconds
+                    setTimeout(() => {
+                        window.location.href = 'dashboard.html';
+                    }, 2000);
+                })
+                .catch((error) => {
+                    // Handle errors
+                    const errorMessage = error.message;
+                    document.getElementById('errorText').textContent = errorMessage;
+                    document.getElementById('errorMessage').classList.remove('hidden');
+                });
+        });
+    </script>
+    <script>feather.replace();</script>
+</body>
+</html>

@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - MyShout</title>
+    <link rel="icon" type="image/x-icon" href="/static/favicon.ico">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/feather-icons/dist/feather.min.js"></script>
+    <script src="https://unpkg.com/feather-icons"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore-compat.js"></script>
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transition: all 0.3s ease;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+        .positive-balance {
+            color: #10b981;
+        }
+        .negative-balance {
+            color: #ef4444;
+        }
+        /* Modal improvements */
+        #friendTransactionsModal {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0,0,0,0.4);
+            z-index: 9999;
+        }
+        #friendTransactionsModal.hidden {
+            display: none;
+        }
+        #friendTransactionsModal .modal-content {
+            max-width: 90vw;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body class="font-sans antialiased text-gray-900">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex">
+                    <div class="flex-shrink-0 flex items-center">
+                        <i data-feather="dollar-sign" class="h-8 w-8 text-indigo-600"></i>
+                        <span class="ml-2 text-xl font-bold text-indigo-600">MyShout</span>
+                    </div>
+                </div>
+                <div class="hidden sm:ml-6 sm:flex sm:items-center space-x-4">
+                    <div class="relative">
+                        <button id="userMenuButton" class="flex items-center space-x-2 focus:outline-none">
+                            <span id="userName" class="text-sm font-medium text-gray-700"></span>
+                            <img id="userAvatar" class="h-8 w-8 rounded-full" src="pfp.jpg" alt="User avatar">
+                        </button>
+                        <div id="userMenu" class="hidden origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-10">
+                            <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Your Profile</a>
+                            <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Settings</a>
+                            <a href="#" id="signOutButton" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Sign out</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Dashboard Content -->
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Left Column -->
+            <div class="lg:col-span-2 space-y-6">
+                <!-- Welcome Card -->
+                <div class="bg-white rounded-lg shadow overflow-hidden">
+                    <div class="p-6">
+                        <h2 class="text-2xl font-bold text-gray-900">Welcome back, <span id="welcomeName"></span>!</h2>
+                        <p class="mt-2 text-gray-600">Here's what's happening with your shared expenses today.</p>
+                    </div>
+                </div>
+                
+                <!-- Add Expense Card -->
+                <div class="bg-white rounded-lg shadow overflow-hidden">
+                    <div class="p-6">
+                        <h3 class="text-lg font-medium text-gray-900">Add a new expense</h3>
+                        <form class="mt-4 space-y-4" id="expenseForm">
+                            <div>
+                                <label for="expenseDescription" class="block text-sm font-medium text-gray-700">Description</label>
+                                <input type="text" id="expenseDescription" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" placeholder="What was it for?">
+                            </div>
+                            <div>
+                                <label for="expenseAmount" class="block text-sm font-medium text-gray-700">Amount</label>
+                                <div class="mt-1 relative rounded-md shadow-sm">
+                                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                        <span class="text-gray-500 sm:text-sm">$</span>
+                                    </div>
+                                    <input type="number" step="0.01" id="expenseAmount" class="focus:ring-indigo-500 focus:border-indigo-500 block w-full pl-7 pr-12 sm:text-sm border-gray-300 rounded-md py-2 px-3" placeholder="0.00">
+                                </div>
+                            </div>
+                            <div>
+                                <label for="expenseFriend" class="block text-sm font-medium text-gray-700">With whom?</label>
+                                <select id="expenseFriend" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                                    <option value="">Select a friend</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="expensePaidBy" class="block text-sm font-medium text-gray-700">Who paid?</label>
+                                <select id="expensePaidBy" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                                    <option value="me">I paid</option>
+                                    <option value="friend">Friend paid</option>
+                                    <option value="split">Split equally</option>
+                                </select>
+                            </div>
+                            <div class="pt-2">
+                                <button type="submit" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                    Add Expense
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                
+                <!-- Recent Expenses -->
+                <div class="bg-white rounded-lg shadow overflow-hidden">
+                    <div class="p-6">
+                        <h3 class="text-lg font-medium text-gray-900">Recent Expenses</h3>
+                        <div class="mt-4 flow-root">
+                            <div class="-my-6 divide-y divide-gray-200">
+                                <div id="expensesList" class="py-6 space-y-4">
+                                    <!-- Expenses will be loaded here -->
+                                    <div class="text-center text-gray-500 py-8">
+                                        <i data-feather="loader" class="h-8 w-8 animate-spin mx-auto"></i>
+                                        <p class="mt-2">Loading expenses...</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Right Column -->
+            <div class="space-y-6">
+                <!-- Balance Summary -->
+                <div class="bg-white rounded-lg shadow overflow-hidden">
+                    <div class="p-6">
+                        <h3 class="text-lg font-medium text-gray-900">Your Balance</h3>
+                        <div class="mt-4">
+                            <div class="flex items-center justify-between">
+                                <p class="text-sm font-medium text-gray-500">Total balance</p>
+                                <p id="totalBalance" class="text-xl font-bold">$0.00</p>
+                            </div>
+                            <div class="mt-6 space-y-4">
+                                <div id="friendsBalances">
+                                    <!-- Friends balances will be loaded here -->
+                                    <div class="text-center text-gray-500 py-4">
+                                        <i data-feather="loader" class="h-6 w-6 animate-spin mx-auto"></i>
+                                        <p class="mt-2 text-sm">Loading balances...</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Add Friend -->
+                <div class="bg-white rounded-lg shadow overflow-hidden">
+                    <div class="p-6">
+                        <h3 class="text-lg font-medium text-gray-900">Add a Friend</h3>
+                        <form class="mt-4 space-y-4" id="addFriendForm">
+                            <div>
+                                <label for="friendEmail" class="block text-sm font-medium text-gray-700">Friend's Email</label>
+                                <input type="email" id="friendEmail" class="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" placeholder="friend@example.com">
+                            </div>
+                            <div class="pt-2">
+                                <button type="submit" class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                                    Send Friend Request
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                
+                <!-- Friends List -->
+                <div class="bg-white rounded-lg shadow overflow-hidden">
+                    <div class="p-6">
+                        <h3 class="text-lg font-medium text-gray-900">Your Friends</h3>
+                        <div class="mt-4">
+                            <div id="friendsList" class="space-y-3">
+                                <!-- Friends will be loaded here -->
+                                <div class="text-center text-gray-500 py-4">
+                                    <i data-feather="loader" class="h-6 w-6 animate-spin mx-auto"></i>
+                                    <p class="mt-2 text-sm">Loading friends...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyDl0Baz4bX-mZ-PGmxybwdRQ_sW75wFBXg",
+            authDomain: "myshout-e5a26.firebaseapp.com",
+            databaseURL: "https://myshout-e5a26-default-rtdb.firebaseio.com",
+            projectId: "myshout-e5a26",
+            storageBucket: "myshout-e5a26.firebasestorage.app",
+            messagingSenderId: "409395113050",
+            appId: "1:409395113050:web:4eae1c45e26ae692df3c63",
+            measurementId: "G-R13MBPGLVH"
+        };
+        
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+        
+        // Global variables
+        let currentUser = null;
+        let friends = [];
+        let expenses = [];
+        
+        // DOM elements
+        const userNameElement = document.getElementById('userName');
+        const welcomeNameElement = document.getElementById('welcomeName');
+        const userAvatarElement = document.getElementById('userAvatar');
+        const userMenuButton = document.getElementById('userMenuButton');
+        const userMenu = document.getElementById('userMenu');
+        const signOutButton = document.getElementById('signOutButton');
+        const expenseForm = document.getElementById('expenseForm');
+        const addFriendForm = document.getElementById('addFriendForm');
+        const friendsListElement = document.getElementById('friendsList');
+        const expensesListElement = document.getElementById('expensesList');
+        const friendsBalancesElement = document.getElementById('friendsBalances');
+        const totalBalanceElement = document.getElementById('totalBalance');
+        const expenseFriendSelect = document.getElementById('expenseFriend');
+        
+        // Check authentication state
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                // User is signed in
+                currentUser = user;
+                userNameElement.textContent = user.displayName || user.email;
+                welcomeNameElement.textContent = user.displayName || user.email.split('@')[0];
+                
+                // Load user data
+                loadUserData();
+                loadFriends();
+                loadExpenses();
+            } else {
+                // User is signed out, redirect to sign in
+                window.location.href = 'signin.html';
+            }
+        });
+        
+        // Toggle user menu
+        userMenuButton.addEventListener('click', () => {
+            userMenu.classList.toggle('hidden');
+        });
+        
+        // Close menu when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!userMenu.contains(e.target) && e.target !== userMenuButton) {
+                userMenu.classList.add('hidden');
+            }
+        });
+        
+        // Sign out
+        signOutButton.addEventListener('click', () => {
+            auth.signOut().then(() => {
+                window.location.href = 'signin.html';
+            });
+        });
+        
+        // Load user data from Firestore
+        function loadUserData() {
+            db.collection('users').doc(currentUser.uid).get()
+                .then((doc) => {
+                    if (doc.exists) {
+                        const userData = doc.data();
+                        userNameElement.textContent = userData.name;
+                        welcomeNameElement.textContent = userData.name;
+                    }
+                });
+        }
+        
+        // Load friends from Firestore
+        function loadFriends() {
+            db.collection('users').doc(currentUser.uid).collection('friends')
+                .onSnapshot((querySnapshot) => {
+                    friends = [];
+                    friendsListElement.innerHTML = '';
+                    expenseFriendSelect.innerHTML = '<option value="">Select a friend</option>';
+                    
+                    querySnapshot.forEach((doc) => {
+                        const friend = doc.data();
+                        friend.id = doc.id;
+                        friends.push(friend);
+                        
+                        // Add to friends list
+                        const friendElement = document.createElement('div');
+                        friendElement.className = 'flex items-center justify-between p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-indigo-100';
+                        friendElement.innerHTML = `
+                            <div class="flex items-center space-x-3">
+                                <img src="pfp.jpg" alt="${friend.name}" class="h-10 w-10 rounded-full">
+                                <span class="text-sm font-medium">${friend.name}</span>
+                            </div>
+                            <span class="text-sm ${friend.balance > 0 ? 'positive-balance' : friend.balance < 0 ? 'negative-balance' : 'text-gray-500'}">
+                                ${friend.balance > 0 ? 'Owes you $' + Math.abs(friend.balance).toFixed(2) : friend.balance < 0 ? 'You owe $' + Math.abs(friend.balance).toFixed(2) : 'Settled up'}
+                            </span>
+                        `;
+                        friendElement.addEventListener('click', () => {
+                            openFriendTransactionsModal(friend);
+                        });
+                        friendsListElement.appendChild(friendElement);
+        // Modal logic
+        function openFriendTransactionsModal(friend) {
+            const modal = document.getElementById('friendTransactionsModal');
+            const modalTitle = document.getElementById('friendModalTitle');
+            const transactionsList = document.getElementById('friendTransactionsList');
+            modalTitle.textContent = `Transactions with ${friend.name}`;
+            transactionsList.innerHTML = '<div class="text-center text-gray-500 py-4"><i data-feather="loader" class="h-6 w-6 animate-spin mx-auto"></i><p class="mt-2 text-sm">Loading transactions...</p></div>';
+            modal.classList.remove('hidden');
+
+            // Fetch transactions between currentUser and friend
+            db.collection('expenses')
+                .where('participants', 'array-contains', currentUser.uid)
+                .get()
+                .then(snapshot => {
+                    const txns = snapshot.docs
+                        .map(doc => ({ id: doc.id, ...doc.data() }))
+                        .filter(txn => txn.participants.includes(friend.id));
+                    if (txns.length === 0) {
+                        transactionsList.innerHTML = '<p class="text-center text-gray-500">No transactions found.</p>';
+                        return;
+                    }
+                    transactionsList.innerHTML = '';
+                    txns.forEach(txn => {
+                        const txnDiv = document.createElement('div');
+                        txnDiv.className = 'p-4 bg-gray-50 rounded-lg flex flex-col gap-2';
+                        txnDiv.innerHTML = `
+                            <div class="flex justify-between items-center">
+                                <span class="font-medium">${txn.description}</span>
+                                <span class="text-sm text-gray-500">${txn.date ? new Date(txn.date.seconds * 1000).toLocaleDateString() : ''}</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm">Amount: $${txn.amount.toFixed(2)}</span>
+                                <span class="text-sm">Status: <span id="txnStatus-${txn.id}">${txn.status || 'unpaid'}</span></span>
+                            </div>
+                            <div class="flex gap-2 mt-2">
+                                <button class="bg-green-500 text-white px-3 py-1 rounded text-xs" onclick="markTxnPaid('${txn.id}')">Mark as Paid</button>
+                                <input type="number" step="0.01" min="0" class="border rounded px-2 py-1 text-xs w-20" id="editAmount-${txn.id}" value="${txn.amount}">
+                                <button class="bg-blue-500 text-white px-3 py-1 rounded text-xs" onclick="editTxnAmount('${txn.id}')">Edit Amount</button>
+                            </div>
+                        `;
+                        transactionsList.appendChild(txnDiv);
+                    });
+                });
+        }
+
+        document.getElementById('closeFriendTransactionsModal').addEventListener('click', () => {
+            document.getElementById('friendTransactionsModal').classList.add('hidden');
+        });
+
+        // Mark transaction as paid
+        window.markTxnPaid = function(txnId) {
+            db.collection('expenses').doc(txnId).update({ status: 'paid' })
+                .then(() => {
+                    document.getElementById(`txnStatus-${txnId}`).textContent = 'paid';
+                });
+        }
+
+        // Edit transaction amount
+        window.editTxnAmount = function(txnId) {
+            const newAmount = parseFloat(document.getElementById(`editAmount-${txnId}`).value);
+            if (isNaN(newAmount) || newAmount < 0) {
+                alert('Enter a valid amount');
+                return;
+            }
+            db.collection('expenses').doc(txnId).update({ amount: newAmount })
+                .then(() => {
+                    alert('Amount updated');
+                });
+        }
+                        
+                        // Add to expense friend select
+                        const option = document.createElement('option');
+                        option.value = friend.id;
+                        option.textContent = friend.name;
+                        expenseFriendSelect.appendChild(option);
+                    });
+                    
+                    // Update balances
+                    updateBalances();
+                });
+        }
+        
+        // Load expenses from Firestore
+        function loadExpenses() {
+            db.collection('expenses')
+                .where('participants', 'array-contains', currentUser.uid)
+                .orderBy('date', 'desc')
+                .limit(10)
+                .onSnapshot((querySnapshot) => {
+                    expenses = [];
+                    expensesListElement.innerHTML = '';
+                    
+                    if (querySnapshot.empty) {
+                        expensesListElement.innerHTML = '<p class="text-center text-gray-500 py-4">No expenses yet. Add your first expense!</p>';
+                        return;
+                    }
+                    
+                    querySnapshot.forEach((doc) => {
+                        const expense = doc.data();
+                        expense.id = doc.id;
+                        expenses.push(expense);
+                        
+                        // Find the other participant
+                        const otherUserId = expense.participants.find(id => id !== currentUser.uid);
+                        const otherUser = friends.find(f => f.id === otherUserId);
+                        const otherUserName = otherUser ? otherUser.name : 'Unknown';
+                        
+                        // Determine if you paid or they paid
+                        let paidByText = '';
+                        if (expense.paidBy === currentUser.uid) {
+                            paidByText = `You paid $${expense.amount.toFixed(2)}`;
+                        } else if (expense.paidBy === otherUserId) {
+                            paidByText = `${otherUserName} paid $${expense.amount.toFixed(2)}`;
+                        } else {
+                            // Split equally
+                            const yourShare = expense.amount / 2;
+                            paidByText = `Split equally (you paid $${yourShare.toFixed(2)})`;
+                        }
+                        
+                        // Add to expenses list
+                        const expenseElement = document.createElement('div');
+                        expenseElement.className = 'flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg';
+                        expenseElement.innerHTML = `
+                            <div class="flex items-center space-x-3">
+                                <img src="https://source.unsplash.com/featured/?${encodeURIComponent((expense.description || 'money').replace(/[^a-zA-Z0-9 ]/g, '').replace(/\s+/g, ',').toLowerCase())}" alt="${expense.description}" class="h-10 w-10 rounded-full object-cover flex-shrink-0" style="background:#eee;" onerror="this.onerror=null;this.src='pfp.jpg';">
+                                <div>
+                                    <p class="text-sm font-medium">${expense.description}</p>
+                                    <p class="text-xs text-gray-500">${paidByText} • ${expense.date.toDate().toLocaleDateString()}</p>
+                                </div>
+                            </div>
+                            <span class="text-sm ${expense.paidBy === currentUser.uid ? 'positive-balance' : 'negative-balance'}">
+                                ${expense.paidBy === currentUser.uid ? '+$' + (expense.amount / 2).toFixed(2) : '-$' + (expense.amount / 2).toFixed(2)}
+                            </span>
+                        `;
+                        expensesListElement.appendChild(expenseElement);
+                    });
+                    
+                    feather.replace();
+                });
+        }
+        
+        // Update balances
+        function updateBalances() {
+            let totalBalance = 0;
+            friendsBalancesElement.innerHTML = '';
+            
+            friends.forEach(friend => {
+                totalBalance += friend.balance || 0;
+                
+                const balanceElement = document.createElement('div');
+                balanceElement.className = 'flex items-center justify-between';
+                balanceElement.innerHTML = `
+                    <span class="text-sm font-medium">${friend.name}</span>
+                    <span class="text-sm ${friend.balance > 0 ? 'positive-balance' : friend.balance < 0 ? 'negative-balance' : 'text-gray-500'}">
+                        ${friend.balance > 0 ? 'You owe $' + Math.abs(friend.balance).toFixed(2) : friend.balance < 0 ? 'Owes you $' + Math.abs(friend.balance).toFixed(2) : 'Settled up'}
+                    </span>
+                `;
+                friendsBalancesElement.appendChild(balanceElement);
+            });
+            
+            totalBalanceElement.textContent = `$${totalBalance.toFixed(2)}`;
+            totalBalanceElement.className = `text-xl font-bold ${totalBalance > 0 ? 'positive-balance' : totalBalance < 0 ? 'negative-balance' : ''}`;
+        }
+        
+        // Add new expense
+        expenseForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const description = document.getElementById('expenseDescription').value;
+            const amount = parseFloat(document.getElementById('expenseAmount').value);
+            const friendId = document.getElementById('expenseFriend').value;
+            const paidBy = document.getElementById('expensePaidBy').value;
+            
+            if (!description || isNaN(amount) || !friendId) {
+                alert('Please fill all fields correctly');
+                return;
+            }
+            
+            const friend = friends.find(f => f.id === friendId);
+            if (!friend) return;
+            
+            // Determine who paid
+            let paidById;
+            if (paidBy === 'me') {
+                paidById = currentUser.uid;
+            } else if (paidBy === 'friend') {
+                paidById = friendId;
+            } else {
+                // Split equally - we'll mark this specially
+                paidById = 'split';
+            }
+            
+            // Create expense
+            db.collection('expenses').add({
+                description: description,
+                amount: amount,
+                paidBy: paidById,
+                participants: [currentUser.uid, friendId],
+                date: firebase.firestore.FieldValue.serverTimestamp(),
+                category: 'general'
+            })
+            .then(() => {
+                // Clear form
+                expenseForm.reset();
+                
+                // Update friend's balance
+                let balanceChange = 0;
+                if (paidBy === 'me') {
+                    balanceChange = amount; // You paid, so friend owes you the full amount
+                } else if (paidBy === 'friend') {
+                    balanceChange = -amount; // Friend paid, so you owe them the full amount
+                }
+                // For split, no balance change as each paid half
+
+                if (paidBy !== 'split') {
+                    db.collection('users').doc(currentUser.uid).collection('friends').doc(friendId).update({
+                        balance: firebase.firestore.FieldValue.increment(balanceChange)
+                    });
+
+                    db.collection('users').doc(friendId).collection('friends').doc(currentUser.uid).update({
+                        balance: firebase.firestore.FieldValue.increment(-balanceChange)
+                    });
+                }
+            })
+            .catch((error) => {
+                console.error('Error adding expense: ', error);
+                alert('Error adding expense: ' + error.message);
+            });
+        });
+        
+        // Add friend
+        addFriendForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const friendEmail = document.getElementById('friendEmail').value;
+            
+            if (!friendEmail) {
+                alert('Please enter your friend\'s email');
+                return;
+            }
+            
+            // First find the user by email
+            db.collection('users').where('email', '==', friendEmail).get()
+                .then((querySnapshot) => {
+                    if (querySnapshot.empty) {
+                        alert('No user found with that email');
+                        return Promise.reject(new Error('No user found with that email'));
+                    }
+                    const friendDoc = querySnapshot.docs[0];
+                    const friendData = friendDoc.data();
+                    const friendId = friendDoc.id;
+                    // Check if already friends
+                    return db.collection('users').doc(currentUser.uid).collection('friends').doc(friendId).get()
+                        .then((friendDocSnap) => ({ friendDocSnap, friendData, friendId }));
+                })
+                .then(({ friendDocSnap, friendData, friendId }) => {
+                    if (friendDocSnap.exists) {
+                        alert('You are already friends with this user');
+                        return Promise.reject(new Error('Already friends'));
+                    }
+                    // Add friend relationship
+                    return Promise.all([
+                        db.collection('users').doc(currentUser.uid).collection('friends').doc(friendId).set({
+                            name: friendData.name,
+                            email: friendData.email,
+                            balance: 0
+                        }),
+                        db.collection('users').doc(friendId).collection('friends').doc(currentUser.uid).set({
+                            name: currentUser.displayName || currentUser.email.split('@')[0],
+                            email: currentUser.email,
+                            balance: 0
+                        })
+                    ]);
+                })
+                .then(() => {
+                    alert('Friend added successfully!');
+                    addFriendForm.reset();
+                })
+                .catch((error) => {
+                    if (error.message === 'No user found with that email' || error.message === 'Already friends') {
+                        // Already handled by alerts above
+                        return;
+                    }
+                    console.error('Error adding friend: ', error);
+                    alert('Error adding friend: ' + error.message);
+                });
+        });
+    </script>
+    <script>AOS.init();</script>
+    <script>feather.replace();</script>
+</body>
+    <!-- Friend Transactions Modal -->
+    <div id="friendTransactionsModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 hidden">
+        <div class="modal-content bg-white rounded-lg shadow-lg max-w-lg w-full p-6 relative" tabindex="-1" role="dialog" aria-modal="true">
+            <button id="closeFriendTransactionsModal" class="absolute top-2 right-2 text-gray-400 hover:text-gray-700 text-xl">&times;</button>
+            <h3 class="text-lg font-bold mb-4" id="friendModalTitle">Friend Transactions</h3>
+            <div id="friendTransactionsList" class="space-y-4"></div>
+        </div>
+    </div>
+
+    <script>
+        // Modal accessibility and close logic
+        document.addEventListener('keydown', function(e) {
+            const modal = document.getElementById('friendTransactionsModal');
+            if (!modal.classList.contains('hidden')) {
+                if (e.key === 'Escape') {
+                    modal.classList.add('hidden');
+                }
+            }
+        });
+        document.getElementById('closeFriendTransactionsModal').addEventListener('click', () => {
+            document.getElementById('friendTransactionsModal').classList.add('hidden');
+        });
+        document.getElementById('friendTransactionsModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                this.classList.add('hidden');
+            }
+        });
+    </script>
+</html>
