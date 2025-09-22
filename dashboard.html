@@ -1,6 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <!-- iOS Web App Meta Tags -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="MyShout">
+    <link rel="apple-touch-icon" href="pfp.jpg">
+    <meta name="theme-color" content="#667eea">
+    <link rel="manifest" href="/manifest.json">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dashboard - MyShout</title>
@@ -58,7 +65,7 @@
     <!-- Navigation -->
     <nav class="bg-white shadow-sm">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16">
+            <div class="flex justify-between h-16 items-center">
                 <div class="flex">
                     <div class="flex-shrink-0 flex items-center">
                         <i data-feather="dollar-sign" class="h-8 w-8 text-indigo-600"></i>
@@ -66,6 +73,7 @@
                     </div>
                 </div>
                 <div class="hidden sm:ml-6 sm:flex sm:items-center space-x-4">
+                    <button id="signOutButtonMain" class="bg-indigo-600 text-white px-4 py-2 rounded shadow hover:bg-indigo-700 focus:outline-none">Sign out</button>
                     <div class="relative">
                         <button id="userMenuButton" class="flex items-center space-x-2 focus:outline-none">
                             <span id="userName" class="text-sm font-medium text-gray-700"></span>
@@ -217,6 +225,12 @@
     </div>
 
     <script>
+        // Main sign out button
+        document.getElementById('signOutButtonMain').addEventListener('click', () => {
+            auth.signOut().then(() => {
+                window.location.href = 'signin.html';
+            });
+        });
         // Initialize Firebase
         const firebaseConfig = {
             apiKey: "AIzaSyDl0Baz4bX-mZ-PGmxybwdRQ_sW75wFBXg",
